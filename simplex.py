@@ -1,6 +1,11 @@
 import numpy as np
 import warnings
 
+# Pokretanje :
+# Instalirati numpy
+# Otkomentarisati zeljeni primer ili dodati svoj
+# $ python simplex.py ili $ python3 simplex.py
+
 warnings.simplefilter(action="ignore", category=DeprecationWarning)  # Za cast u list()
 np.set_printoptions(suppress=True)  # Brise eksponencijalnu notaciju brojeva
 
@@ -29,7 +34,7 @@ freeCoeffs = np.array([[24], [60]])
 
 
 def pvt(table, nonbaseVariables, nonbaseVariableIndexes):
-    print("Calling pvt 💫")
+    print("Calling pvt...")
     print(np.round(table, 2))
     omega = table[0, 1:-2]
     belowOmega = table[1:, 1:-2]
@@ -99,6 +104,7 @@ def pvt(table, nonbaseVariables, nonbaseVariableIndexes):
 
 
 def reset(table):
+    print("Calling reset...")
     print("Original:", costFunctionCoeffs)
     baseVariables = []
     baseVariableIndexes = []
@@ -124,7 +130,7 @@ def reset(table):
 
 
 def updateTable(table, pivotRow, pivotElem):
-    print("🔱 Updating table...")
+    print("Calling updateTable...")
     # Izmena svih elemenata osim pivot reda, on mora na kraju da ne utice na ostale
     for row in range(constraintCoeffs.shape[0] + 1):
         # Column do + 2 jer pivot kolonu menjamo na poseban nacin
@@ -160,7 +166,7 @@ def simplexMax(costFunctionCoeffs, constraintCoeffs, freeCoeffs):
     baseVariables = np.zeros((1, len(baseVariableIndexes)))
     for (index, indexValue) in enumerate(baseVariableIndexes):
         baseVariables[0, index] = costFunctionCoeffs[indexValue]
-    print("🎇 baseVariables: ", baseVariables)  # baseVariables je Cb
+    print("baseVariables: ", baseVariables)  # baseVariables je Cb
 
     # baseVariables ce se inicijalizovati na 0 koliko god ih ima
     # B je deo constraintCoeffs matrice od kolone prvog baseVariableIndex-a do kraja
