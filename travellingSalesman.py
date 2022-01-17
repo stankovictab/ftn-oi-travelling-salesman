@@ -1,8 +1,18 @@
 from asyncio import run_coroutine_threadsafe
+from operator import contains
 import numpy as np
 import math
 
-priceMatrix = np.array([[999, 1, 2], [4, 999, 1], [3, 2, 999]])
+# priceMatrix = np.array([[999, 1, 2], [4, 999, 1], [3, 2, 999]])
+priceMatrix = np.array(
+    [
+        [999, 2, 3, 1, 4],
+        [1, 999, 2, 3, 4],
+        [3, 1, 999, 4, 2],
+        [4, 3, 2, 999, 1],
+        [2, 3, 4, 1, 999],
+    ]
+)
 
 # [999, 1, 2]
 # [4, 999, 1]
@@ -39,13 +49,14 @@ priceMatrix = np.array([[999, 1, 2], [4, 999, 1], [3, 2, 999]])
 print(priceMatrix)
 
 dimension = priceMatrix.shape[0]
-# dimension = 5
+dimension = 5
 
-stack = np.zeros(
-    (dimension, 2)
-)  # Stack za pravljenje rute, elementi su indeksi matrice
-stack = stack - 1
-print(stack)
+# stack = np.zeros(
+#     (dimension, 2)
+# )  # Stack za pravljenje rute, elementi su indeksi matrice
+# stack = stack - 1
+# print(stack)
+stack = []
 # memory je python lista jer mora da ima u sebi listu uredjenih parova za 1. elem.
 # memory = [[]]
 memory = np.zeros((math.factorial(dimension), 2))  # TODO: routesAndPrices
@@ -64,31 +75,128 @@ memoryList = list(memory)
 print("There are", memory.shape[0], "possible routes.")
 
 
-def calcCost(array):
+def calcCost(stack):
     totalCost = 0
-    for (index, value) in enumerate(array):
-        print(value)
+    for value in stack:
         row = int(value[0])
         col = int(value[1])
         totalCost += priceMatrix[row, col]
+    print("Total cost for route", stack, "is:", totalCost)
     return totalCost
 
 
+def fillMask(mask, row, col):
+    # Glavna dijagonala
+    for i in range(dimension):
+        for j in range(dimension):
+            if i == j:
+                mask[i, j] = 1
+    # Plus - Red i Kolona
+    mask[:, col] = 1
+    mask[row, :] = 1
+    # Simetricno po glavnoj dijagonali
+    mask[col, row] = 1
+    print("Mask")
+    print(mask)
+
+
+firstRow = -1
+memoryIndex = 0
+
+
+def grananje(mask, row, col):
+    print("Usao u grananje")
+    stack.append((row, col))
+    print("Stack:", stack)
+    print("Mask")
+    print(mask)
+    print("Row, col:", row, col)
+
+    print("Napunio")
+    fillMask(mask, row, col)
+
+    zeroCounter = 0
+    (lastZeroX, lastZeroY) = (-1, -1)
+    for x in range(dimension):
+        for y in range(dimension):
+            if mask[x, y] == 0:
+                zeroCounter += 1
+                lastZeroX = x
+                lastZeroY = y
+    print("ZERO TEST:")
+    print("Broj nula:", zeroCounter)
+    print("Koordinate poslednje nule:", lastZeroX, lastZeroY)
+    if zeroCounter == 1:
+        print("JEDNA NULA! KRAJ!")
+        stack.append((lastZeroX, lastZeroY))
+        print("Stack")
+        print(stack)
+        fillStackIntoMemory()
+        return
+    # TODO: OVDE SE VRATI NA 2 4, STO I TREBA, ALI TREBA DA SE RESETUJE MASKA NA PRVOBITNO STANJE
+    # TAKO DA ILI NEKI STEK MASKI ILI POCNI IZ POCETKA ALI OBELEZI GDE SI BIO,
+    # ALI TO ONDA MORA OD NAZAD?
+    for indexAsCol, zero in enumerate(mask[col, :]):
+        # col, indexAsCol je pozicija trenutne nule
+        print("Trenutan element maske je:", col, indexAsCol)
+        print("Mask")
+        print(mask)
+        if zero == 0:
+            # print(indexAsCol)
+            if indexAsCol == firstRow:
+                print("NE SME OVAJ!")
+                print("Masked 1 on", col, indexAsCol)
+                mask[col, indexAsCol] = 1
+                continue
+            grananje(mask, col, indexAsCol)
+
+
+def fillStackIntoMemory():
+    global stack
+    global memoryList
+    global memoryIndex
+    print("Calculating cost...")
+    totalCost = calcCost(stack)
+    stack.append(totalCost)
+    memoryList[memoryIndex] = stack
+    memoryIndex += 1
+    # print("Memory List:")
+    # for x in memoryList:
+    #     print(x)
+    stack = []
+
+
 def bruteForce(priceMatrix):
-    totalCost = 0
-    stackPosition = 0
-    memoryIndex = 0
+    # totalCost = 0
+    # stackPosition = 0
+    global firstRow
     for row in range(dimension):  # reversed(range(dimension))
         for col in range(dimension):  # reversed(range(dimension))
             # pamti red kao djoka
+            firstRow = row
             if priceMatrix[row, col] == 999:
                 continue
+            print("Stack:", stack)
+            stack.append((row, col))
+            print("Stack:", stack)
             # puni masku po glavnoj dijagonali, krstu i simetricnom
+            mask = np.zeros((dimension, dimension))
+            fillMask(mask, row, col)
             # sad gledamo onaj red koji je bio od selektovanog kolona
-            # u tom redu biramo sledeci koji selektujemo
             # biramo prvi slobodan koji :
             #    je u masci 0
             #    zadovoljava da je njegova kolona razlicita od djoke
+            for indexAsCol, zero in enumerate(mask[col, :]):
+                # col, indexAsCol je pozicija trenutne nule
+                if zero == 0:
+                    # print(indexAsCol)
+                    if indexAsCol == firstRow:
+                        print("NE SME OVAJ!")
+                        print("Masked 1 on", col, indexAsCol)
+                        mask[col, indexAsCol] = 1
+                        continue
+                    grananje(mask, col, indexAsCol)
+            print("-----------------------")
             # ako je u poslednjem redu ostala samo jedna nula, to oznacava kraj, i onda ovaj drugi uslov (djoka) ne vazi
 
             # (maska se resetuje na svaku novu rutu)
@@ -100,30 +208,33 @@ def bruteForce(priceMatrix):
             # red iz kojeg je krenuo je row
             # ako je krenuo iz tog row, on ne sme da se vrati u tu istu ali kolonu
             # i onda ne sme da se vrati u tu ili bilo koju drugu kolonu u kojoj je vec bio
-            # TODO: Provera da li je selektovani bio na stackPosition mestu u memoriji
-            if row in stack[:, 0]:
-                continue
-            stack[stackPosition, 0] = row
-            stack[stackPosition, 1] = col
-            stackPosition += 1
-            print("Stack Pos", stackPosition)
-            if stackPosition == dimension:
-                # Dosli smo do kraja
-                rowToInsert = list(stack)
-                rowToInsert.append(rowToInsert[0])
-                rowToInsert.append(calcCost(stack))
-                memoryList[memoryIndex] = rowToInsert
-                print("Memory List:")
-                for x in memoryList:
-                    print(x)
-                memoryIndex += 1
-                break
+    #         # TODO: Provera da li je selektovani bio na stackPosition mestu u memoriji
+    #         if row in stack[:, 0]:
+    #             continue
+    #         stack[stackPosition, 0] = row
+    #         stack[stackPosition, 1] = col
+    #         stackPosition += 1
+    #         print("Stack Pos", stackPosition)
+    #         if stackPosition == dimension:
+    #             # Dosli smo do kraja
+    #             rowToInsert = list(stack)
+    #             rowToInsert.append(rowToInsert[0])
+    #             rowToInsert.append(calcCost(stack))
+    #             memoryList[memoryIndex] = rowToInsert
+    #             print("Memory List:")
+    #             for x in memoryList:
+    #                 print(x)
+    #             memoryIndex += 1
+    #             break
 
-            print("Added", row, col, "to the stack.")
-            print(stack)
+    #         print("Added", row, col, "to the stack.")
+    #         print(stack)
 
-    minimumIndex = 0
-    print("Najmanja cena puta je:", memoryList[minimumIndex][-1])
+    # minimumIndex = 0
+    # print("Najmanja cena puta je:", memoryList[minimumIndex][-1])
+    print("Memory List:")
+    for x in memoryList:
+        print(x)
     return (False, False)
 
 
