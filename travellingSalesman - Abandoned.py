@@ -151,7 +151,7 @@ def grananje(row, col):
             # if zero == 0:
             # print(indexAsCol)
             if indexAsCol == firstRow:
-                print("NE SME OVAJ!")  # djoka
+                print("NE SME OVAJ!")
                 print("Masked 1 on", col, indexAsCol)
                 mask[col, indexAsCol] = 1
                 continue
@@ -190,7 +190,7 @@ def bruteForce(priceMatrix):
                 return (False, False)
             # Resetovanje maske na sve nule, svaki put kada se uzme novi prvi element
             mask = maskStack[0].copy()
-            firstRow = row  # pamti red kao djoka
+            firstRow = row  # pamti red odakle je poceo
             if priceMatrix[row, col] == 999:
                 continue
             print("Stack:", stack)
@@ -201,7 +201,7 @@ def bruteForce(priceMatrix):
             # Sad gledamo onaj red koji je bio od selektovanog kolona
             # Biramo prvi slobodan koji :
             #    - Je u masci 0
-            #    - Zadovoljava da je njegova kolona razlicita od djoke
+            #    - Zadovoljava da je njegova kolona razlicita od prve
             for indexAsCol, zero in enumerate(mask[col, :]):
                 # col, indexAsCol je pozicija trenutne nule
                 if zero == 0:
@@ -214,7 +214,7 @@ def bruteForce(priceMatrix):
                     maskStack.append(mask.copy())
                     grananje(col, indexAsCol)
             print("-----------------------")
-            # ako je u poslednjem redu ostala samo jedna nula, to oznacava kraj, i onda ovaj drugi uslov (djoka) ne vazi
+            # ako je u poslednjem redu ostala samo jedna nula, to oznacava kraj, i onda ovaj drugi uslov ne vazi
 
             # (maska se resetuje na svaku novu rutu)
             # (moramo da koristimo memoriju za grananje)
