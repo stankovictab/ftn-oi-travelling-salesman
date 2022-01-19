@@ -2,7 +2,7 @@ import numpy as np
 import math
 
 SHOW_TABLE = True  # Da li da prikaze tabelu sa rutama i cenama
-ALGO = 1  # 0 - bruteForce, 1 - nearestNeighbour, 2 - hungarian, 3........ TODO:
+ALGO = 2  # 0 - bruteForce, 1 - nearestNeighbour, 2 - hungarian, 3........ TODO:
 
 priceMatrix = np.array(
     [
@@ -27,7 +27,7 @@ if ALGO == 0:
 elif ALGO == 1:
     memoryList = list(np.zeros((dimension, 2)))
 elif ALGO == 2:
-    2 + 2  # TODO:
+    memoryList = []  # Ne koristi
 elif ALGO == 3:
     2 + 2  # TODO:
 
@@ -157,7 +157,54 @@ def nearestNeighbour():
         )
 
 
+def rowReduction():
+    global priceMatrix
+    for x in range(dimension):
+        minValue = math.inf
+        for y in range(dimension):
+            if priceMatrix[x, y] < minValue:
+                minValue = priceMatrix[x, y]
+        for y in range(dimension):
+            if priceMatrix[x, y] == 999:
+                continue
+            priceMatrix[x, y] -= minValue
+
+    print("-------------------")
+    print("Row Reduced:")
+    for i in priceMatrix:
+        print(i)
+    return
+
+
+def columnReduction():
+    global priceMatrix
+    for x in range(dimension):
+        minValue = math.inf
+        for y in range(dimension):
+            if priceMatrix[y, x] < minValue:
+                minValue = priceMatrix[y, x]
+        for y in range(dimension):
+            if priceMatrix[y, x] == 999:
+                continue
+            priceMatrix[y, x] -= minValue
+
+    print("-------------------")
+    print("Column Reduced:")
+    for i in priceMatrix:
+        print(i)
+    return
+
+
+def hungarian():
+    rowReduction()
+    columnReduction()
+    return
+
+
 if ALGO == 0:
     bruteForce()
 elif ALGO == 1:
     nearestNeighbour()
+elif ALGO == 2:
+    hungarian()
+
