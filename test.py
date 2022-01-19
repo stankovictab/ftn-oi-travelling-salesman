@@ -32,6 +32,9 @@ def permutation(lst):
 # Driver program to test above function
 data = list("01234")
 i = 0
+
+# print(permutation(data))
+
 for p in permutation(data):
     i += 1
     print(p)
