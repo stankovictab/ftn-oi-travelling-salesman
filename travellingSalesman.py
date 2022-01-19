@@ -2,6 +2,7 @@ import numpy as np
 import math
 
 SHOW_TABLE = True  # Da li da prikaze tabelu sa rutama i cenama
+ALGO = 1  # 0 - bruteForce, 1 - nearestNeighbour, 2 - hungarian, 3........ TODO:
 
 priceMatrix = np.array(
     [
@@ -13,14 +14,24 @@ priceMatrix = np.array(
     ]
 )
 # priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
-
-
+print("------------------------")
+print("Input price matrix:")
 print(priceMatrix)
 dimension = priceMatrix.shape[0]
 stack = []
 memoryIndex = 0
 mask = np.zeros((dimension, dimension))
-memoryList = list(np.zeros((math.factorial(dimension), 2)))
+
+if ALGO == 0:
+    memoryList = list(np.zeros((math.factorial(dimension), 2)))
+elif ALGO == 1:
+    memoryList = list(np.zeros((dimension, 2)))
+elif ALGO == 2:
+    2 + 2  # TODO:
+elif ALGO == 3:
+    2 + 2  # TODO:
+
+
 print("There are", math.factorial(dimension), "possible routes.")
 
 
@@ -49,6 +60,7 @@ def generatePermutations(lst):
 
 
 def calcCost(route):
+    # print(route)
     totalCost = 0
     for index, value in enumerate(route):
         if index != dimension:
@@ -57,22 +69,6 @@ def calcCost(route):
             totalCost += priceMatrix[row, col]
     # print("Total cost for route", route, "is:", totalCost)
     return totalCost
-
-
-def fillMask(row, col):
-    global mask
-    # Glavna dijagonala
-    for i in range(dimension):
-        for j in range(dimension):
-            if i == j:
-                mask[i, j] = 1
-    # Plus - Red i Kolona
-    mask[:, col] = 1
-    mask[row, :] = 1
-    # Simetricno po glavnoj dijagonali
-    mask[col, row] = 1
-    print("Mask")
-    print(mask)
 
 
 def bruteForce():
@@ -109,23 +105,59 @@ def bruteForce():
     return
 
 
-def nearestNeighbour():
-    # TODO: Sta ako u redu ima npr 2 minimalna elementa - da li je bitno koji se uzima?
-    for row in range(dimension):
-        # Za svaki red se pravi tacno jedna ruta
-        minVal = math.inf
-        for col in range(dimension):
-            if priceMatrix[row][col] < math.inf:
+def nnNewRow(beginning, row):
+    memoryList[beginning].append(row)
+    mask[:, row] = 1
+    minVal = math.inf
+    minValCol = -1
+    for col in range(dimension):
+        if priceMatrix[row][col] < minVal:
+            if mask[row, col] == 0:
                 minVal = priceMatrix[row][col]
                 minValCol = col
-    # TODO: U masci kolonu postavljamo na 1, ne diramo red (nema potrebe)
-    # (ako idemo iz A, celu kolonu A stavimo na 1, nije isto kao pre sto je bilo za brute force)
-    # Na kraju samo moramo da skontamo kako da iz poslednjeg cvora ode u prvi,
-    # Mada to moze samo u memoryList da se .append(l[0]) kao za brute force ovde, nije to problem
-
-    # TODO: Ispisati sve (optimalne) putanje iz svakog cvora, pa onda od svih njih najbolju (iz bilo kog cvora)
+    if minValCol == -1:
+        return
+    nnNewRow(beginning, minValCol)
     return
 
 
-# bruteForce()
-nearestNeighbour()
+def nearestNeighbour():
+    global mask
+    # TODO: Sta ako u redu ima npr 2 minimalna elementa - da li je bitno koji se uzima?
+    for row in range(dimension):
+        memoryList[row] = [row]
+        mask[:, row] = 1
+        # Za svaki red se pravi tacno jedna ruta
+        minVal = math.inf
+        minValCol = -1
+        for col in range(dimension):
+            if priceMatrix[row][col] < minVal:
+                if mask[row, col] == 0:
+                    minVal = priceMatrix[row][col]
+                    minValCol = col
+        if minValCol == -1:
+            return
+        nnNewRow(row, minValCol)  # minValCol ce biti novi row
+        mask = np.zeros((dimension, dimension))
+    for index, l in enumerate(memoryList):
+        memoryList[index].append(memoryList[index][0])
+    for index, l in enumerate(memoryList):
+        cost = calcCost(memoryList[index])
+        memoryList[index].append(cost)
+    print("--------------------------")
+    print("Optimal routes are :")
+    for index, l in enumerate(memoryList):
+        print(
+            "From",
+            memoryList[index][0],
+            ": ",
+            memoryList[index][:-1],
+            "with price",
+            memoryList[index][-1],
+        )
+
+
+if ALGO == 0:
+    bruteForce()
+elif ALGO == 1:
+    nearestNeighbour()
