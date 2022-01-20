@@ -6,6 +6,7 @@ ALGO = 2  # 0 - bruteForce, 1 - nearestNeighbour, 2 - hungarian, 3........ TODO:
 
 # TODO: Uporediti rezultate svih algoritama nad istim priceMatrix
 
+# Random primer iz glave
 priceMatrix = np.array(
     [
         [999, 2, 3, 1, 4],
@@ -15,10 +16,16 @@ priceMatrix = np.array(
         [2, 3, 4, 1, 999],
     ]
 )
-# priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
+# Hungarian kaze da ima vise optimalnih ruta i staje
+
+priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
+# Hungarian radi - [0, 2, 1, 0] with price 8
+
+# Hungarian primer sa indijskog snimka
 priceMatrix = np.array(
     [[999, 25, 75, 45], [35, 999, 150, 25], [35, 40, 999, 15], [65, 75, 130, 999]]
 )
+# Hungarian radi - [0, 2, 3, 1, 0] with price 200
 
 print("------------------------")
 print("Input price matrix:")
@@ -34,8 +41,9 @@ if ALGO == 0:
 elif ALGO == 1:
     memoryList = list(np.zeros((dimension, 2)))
 elif ALGO == 2:
-    memoryList = []  # Ne koristi
+    # Ne koristi memoryList
     reducedPriceMatrix = priceMatrix.copy()
+    multipleOptimalRoutesFlag = 0
 elif ALGO == 3:
     2 + 2  # TODO:
 
@@ -68,7 +76,7 @@ def generatePermutations(lst):
 
 
 def calcCost(route):
-    print(priceMatrix)
+    # print(priceMatrix)
     # print(route)
     totalCost = 0
     for index, value in enumerate(route):
@@ -204,11 +212,50 @@ def columnReduction():
     return
 
 
+def multipleOptimalRouteCheck():
+    global multipleOptimalRoutesFlag
+    global reducedPriceMatrix
+    # Row Check
+    zeroCountPerRow = []
+    zeroCountPerColumn = []
+    for x in range(dimension):
+        zeroCount = 0
+        for y in range(dimension):
+            if reducedPriceMatrix[x, y] == 0:
+                if mask[x, y] == 0:
+                    zeroCount += 1
+        zeroCountPerRow.append(zeroCount)
+    # Column Check
+    for x in range(dimension):
+        zeroCount = 0
+        for y in range(dimension):
+            if reducedPriceMatrix[y, x] == 0:
+                if mask[y, x] == 0:
+                    zeroCount += 1
+        zeroCountPerColumn.append(zeroCount)
+    # Ako imamo neki red ili kolonu koja ima tacno 1 nulu, to znaci da postoji jedna optimalna putanja, pa vracamo flag na ok stanje
+    # U suprotnom ostavljamo raise-ovan flag
+    multipleOptimalRoutesFlag = 1
+    for i in range(dimension):
+        if zeroCountPerRow[i] == 1:
+            multipleOptimalRoutesFlag = 0
+        if zeroCountPerColumn[i] == 1:
+            multipleOptimalRoutesFlag = 0
+    # TODO: Obrisati ako se skapira, tako da se ne radi grananje i backtracking za proveru iz svih mogucih nula
+    if multipleOptimalRoutesFlag == 1:
+        print("There exist multiple optimal solutions, the algorithm will stop.")
+        return False
+    print("zeroCountPerRow:", zeroCountPerRow)
+    print("zeroCountPerColumn:", zeroCountPerColumn)
+    return
+
+
 def rowZeros():
     print("Started finding row zeros...")
     global reducedPriceMatrix
     global mask
     global routeMask
+    global multipleOptimalRoutesFlag
     for x in range(dimension):
         numOfZeros = 0
         selectedZeroRow = -1
@@ -224,6 +271,24 @@ def rowZeros():
         if numOfZeros == 1:
             mask[:, selectedZeroCol] += 1  # Inkrementira jer hocemo 2 na presecima
             routeMask[selectedZeroRow, selectedZeroCol] = 1
+        if numOfZeros >= 2 and multipleOptimalRoutesFlag == 1:
+            # TODO: Mislim da je isto? Uzima poslednji sacuvan selectedZero..., to moze, ne mora bas prvi.
+            mask[:, selectedZeroCol] += 1  # Inkrementira jer hocemo 2 na presecima
+            routeMask[selectedZeroRow, selectedZeroCol] = 1
+            # Vracamo flag, da ne uzme sledeci put kada ima 2 nule u redu poslednju, nego da nastavi standardan postupak
+            multipleOptimalRoutesFlag = 0
+            # Drugu nulu (odnosno sve ostale nule) u redu isto moramo da obelezimo u masci
+            # da ne bi imali dve jedinice u istom redu u routeMask na kraju
+            for col in range(dimension):
+                if reducedPriceMatrix[selectedZeroRow, col] == 0:
+                    if mask[selectedZeroRow, col] == 0:
+                        # Ne sme += 1 jer ce to postaviti 2 na onu selektovanu nulu, a 2 nam je intersection, a 1 je ok da bude
+                        mask[selectedZeroRow, col] = 1
+        # TODO: Slucaj za vise optimalnih ruta
+        # kada prodje ovaj if gore (bitno) da radi if multipleOptimalRoutesFlag == 1
+        # (mislim da mora provera i da je numOfZeros razlicito od 0, dakle bar 2 nule u redu, da moze da izabere)
+        # ako jeste, onda override-uj ovo sto je u gornjem if-u na prvu nulu u tom redu, na primer
+        # ovo isto i za column treba (mada mozda i ne?) TODO:
         for l in reducedPriceMatrix:
             print(l)
         for m in mask:
@@ -235,6 +300,7 @@ def columnZeros():
     global reducedPriceMatrix
     global mask
     global routeMask
+    global multipleOptimalRoutesFlag
     for x in range(dimension):
         numOfZeros = 0
         selectedZeroRow = -1
@@ -300,12 +366,12 @@ def createRouteFromRouteMask():
                 break
         if row == 0:
             break
-    print("Created route", route, "from routeMask.")
+    print(route)
     newRoute = []
     for i in range(dimension):
         newRoute.append(route[i][0])
     newRoute.append(newRoute[0])
-    print("newRoute:", newRoute)
+    print("Created route", newRoute, "from routeMask.")
     return newRoute
 
 
@@ -316,164 +382,69 @@ def hungarian():
 
     rowReduction()
     columnReduction()
+    while True:
+        mask = np.zeros((dimension, dimension))
+        routeMask = np.zeros((dimension, dimension))
+        existsZeroInBlock = 1
+        while existsZeroInBlock == 1:
+            if multipleOptimalRouteCheck() == False:
+                return
+            rowZeros()
+            columnZeros()
 
-    mask = np.zeros((dimension, dimension))
-    routeMask = np.zeros((dimension, dimension))
-    existsZeroInBlock = 1
-    while existsZeroInBlock == 1:
-        rowZeros()
-        columnZeros()
+            print("Route Mask:")
+            for l in routeMask:
+                print(l)
 
-        print("Route Mask:")
-        for l in routeMask:
-            print(l)
+            onesInRowPerRow = []
+            for x in range(dimension):
+                onesInRow = 0
+                for y in range(dimension):
+                    if routeMask[x, y] == 1:
+                        onesInRow += 1
+                onesInRowPerRow.append(onesInRow)
 
-        onesInRowPerRow = []
-        for x in range(dimension):
-            onesInRow = 0
-            for y in range(dimension):
-                if routeMask[x, y] == 1:
-                    onesInRow += 1
-            onesInRowPerRow.append(onesInRow)
+            onesInColumnPerColumn = []
+            for x in range(dimension):
+                onesInColumn = 0
+                for y in range(dimension):
+                    if routeMask[y, x] == 1:
+                        onesInColumn += 1
+                onesInColumnPerColumn.append(onesInColumn)
 
-        onesInColumnPerColumn = []
-        for x in range(dimension):
-            onesInColumn = 0
-            for y in range(dimension):
-                if routeMask[y, x] == 1:
-                    onesInColumn += 1
-            onesInColumnPerColumn.append(onesInColumn)
+            print("Ones from routeMask:")
+            print(onesInRowPerRow)
+            print(onesInColumnPerColumn)
+            # Ako su ove 2 liste pune jedinica, to znaci da u svakom redu i svakoj koloni routeMaske ima tacno jedna jedinic
+            notOneFlag = 0
+            for x in range(dimension):
+                if onesInRowPerRow[x] != 1:
+                    notOneFlag = 1
+                if onesInColumnPerColumn[x] != 1:
+                    notOneFlag = 1
+            if notOneFlag == 0:  # Ako ovde udje, ispunjen je uslov za kraj
+                route = createRouteFromRouteMask()
+                price = calcCost(route)
+                print("Algorithm Finished!")
+                print("Optimal route is:", route, "with price", price)
+                print(
+                    "The optimal route is cyclical, so the choice of the first node doesn't matter."
+                )
+                return
 
-        print("Ones from routeMask:")
-        print(onesInRowPerRow)
-        print(onesInColumnPerColumn)
-        # Ako su ove 2 liste pune jedinica, to znaci da u svakom redu i svakoj koloni routeMaske ima tacno jedna jedinica
-        # TODO: Uradi na osnovu toga tu proveru za kraj, i return
-
-        # existsZeroInBlock provera
-        zerosInBlock = 0
-        for x in range(dimension):
-            for y in range(dimension):
-                if mask[x, y] == 0:
-                    if reducedPriceMatrix[x, y] == 0:
-                        zerosInBlock += 1
-        if zerosInBlock > 0:
-            existsZeroInBlock = 1
-        else:
-            existsZeroInBlock = 0
-
-    findMinInBlock()
-    print("-------!!!---------")
-
-    mask = np.zeros((dimension, dimension))
-    routeMask = np.zeros((dimension, dimension))
-    existsZeroInBlock = 1
-    while existsZeroInBlock == 1:
-        rowZeros()
-        columnZeros()
-
-        print("Route Mask:")
-        for l in routeMask:
-            print(l)
-
-        onesInRowPerRow = []
-        for x in range(dimension):
-            onesInRow = 0
-            for y in range(dimension):
-                if routeMask[x, y] == 1:
-                    onesInRow += 1
-            onesInRowPerRow.append(onesInRow)
-
-        onesInColumnPerColumn = []
-        for x in range(dimension):
-            onesInColumn = 0
-            for y in range(dimension):
-                if routeMask[y, x] == 1:
-                    onesInColumn += 1
-            onesInColumnPerColumn.append(onesInColumn)
-
-        print("Ones from routeMask:")
-        print(onesInRowPerRow)
-        print(onesInColumnPerColumn)
-        # Ako su ove 2 liste pune jedinica, to znaci da u svakom redu i svakoj koloni routeMaske ima tacno jedna jedinica
-        # TODO: Uradi na osnovu toga tu proveru za kraj, i return
-
-        # existsZeroInBlock provera
-        zerosInBlock = 0
-        for x in range(dimension):
-            for y in range(dimension):
-                if mask[x, y] == 0:
-                    if reducedPriceMatrix[x, y] == 0:
-                        zerosInBlock += 1
-        if zerosInBlock > 0:
-            existsZeroInBlock = 1
-        else:
-            existsZeroInBlock = 0
-
-    findMinInBlock()
-    print("-------!!!---------")
-
-    mask = np.zeros((dimension, dimension))
-    routeMask = np.zeros((dimension, dimension))
-    existsZeroInBlock = 1
-    while existsZeroInBlock == 1:
-        rowZeros()
-        columnZeros()
-
-        print("Route Mask:")
-        for l in routeMask:
-            print(l)
-
-        onesInRowPerRow = []
-        for x in range(dimension):
-            onesInRow = 0
-            for y in range(dimension):
-                if routeMask[x, y] == 1:
-                    onesInRow += 1
-            onesInRowPerRow.append(onesInRow)
-
-        onesInColumnPerColumn = []
-        for x in range(dimension):
-            onesInColumn = 0
-            for y in range(dimension):
-                if routeMask[y, x] == 1:
-                    onesInColumn += 1
-            onesInColumnPerColumn.append(onesInColumn)
-
-        print("Ones from routeMask:")
-        print(onesInRowPerRow)
-        print(onesInColumnPerColumn)
-        # Ako su ove 2 liste pune jedinica, to znaci da u svakom redu i svakoj koloni routeMaske ima tacno jedna jedinic
-        notOneFlag = 0
-        for x in range(dimension):
-            if onesInRowPerRow[x] != 1:
-                notOneFlag = 1
-            if onesInColumnPerColumn[x] != 1:
-                notOneFlag = 1
-        if notOneFlag == 0:  # Ako ovde udje, ispunjen je uslov za kraj
-            route = createRouteFromRouteMask()
-            price = calcCost(route)
-            print("Algorithm Finished!")
-            print("Optimal route is:", route, "with price", price)
-            print("The optimal route is cyclical, ")
-            return
-
-        # existsZeroInBlock provera
-        zerosInBlock = 0
-        for x in range(dimension):
-            for y in range(dimension):
-                if mask[x, y] == 0:
-                    if reducedPriceMatrix[x, y] == 0:
-                        zerosInBlock += 1
-        if zerosInBlock > 0:
-            existsZeroInBlock = 1
-        else:
-            existsZeroInBlock = 0
-
-    # findMinInBlock()
-    # print("-------!!!---------")
-
-    return
+            # existsZeroInBlock provera
+            zerosInBlock = 0
+            for x in range(dimension):
+                for y in range(dimension):
+                    if mask[x, y] == 0:
+                        if reducedPriceMatrix[x, y] == 0:
+                            zerosInBlock += 1
+            if zerosInBlock > 0:
+                existsZeroInBlock = 1
+            else:
+                existsZeroInBlock = 0
+        findMinInBlock()
+        print("-------!!!---------")
 
 
 if ALGO == 0:

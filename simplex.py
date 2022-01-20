@@ -21,9 +21,9 @@ constraintCoeffs = np.matrix([[0.5, 2, 1, 1, 0], [1, 2, 4, 0, 1]])
 freeCoeffs = np.array([[24], [60]])
 
 # Primer 2
-costFunctionCoeffs = np.array([2, 1.5, 0, 0])
-constraintCoeffs = np.matrix([[6, 3, 1, 0], [75, 100, 0, 1]])
-freeCoeffs = np.array([[1200], [25000]])
+# costFunctionCoeffs = np.array([2, 1.5, 0, 0])
+# constraintCoeffs = np.matrix([[6, 3, 1, 0], [75, 100, 0, 1]])
+# freeCoeffs = np.array([[1200], [25000]])
 
 # Primer 3
 # costFunctionCoeffs = np.array([1, 2, 3, 0, 0, 0])
