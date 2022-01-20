@@ -21,9 +21,9 @@ constraintCoeffs = np.matrix([[0.5, 2, 1, 1, 0], [1, 2, 4, 0, 1]])
 freeCoeffs = np.array([[24], [60]])
 
 # Primer 2
-# costFunctionCoeffs = np.array([2, 1.5, 0, 0])
-# constraintCoeffs = np.matrix([[6, 3, 1, 0], [75, 100, 0, 1]])
-# freeCoeffs = np.array([[1200], [25000]])
+costFunctionCoeffs = np.array([2, 1.5, 0, 0])
+constraintCoeffs = np.matrix([[6, 3, 1, 0], [75, 100, 0, 1]])
+freeCoeffs = np.array([[1200], [25000]])
 
 # Primer 3
 # costFunctionCoeffs = np.array([1, 2, 3, 0, 0, 0])
@@ -210,6 +210,13 @@ def simplexMax(costFunctionCoeffs, constraintCoeffs, freeCoeffs):
             print(np.round(table, 2))
             print("Simplex algorithm finished. 🏁")
             print("The result is: ", table[0, -2])
+            for i in range(table.shape[0] - 1):
+                print(
+                    "Base variable",
+                    int(table[i + 1, 0]),
+                    "has coefficient",
+                    table[i + 1, -2],
+                )
             return
         (
             baseVariables,
