@@ -1,8 +1,13 @@
+from statistics import median
 import numpy as np
 import math
+import random
 
-SHOW_TABLE = True  # Da li da prikaze tabelu sa rutama i cenama
-ALGO = 2  # 0 - bruteForce, 1 - nearestNeighbour, 2 - hungarian, 3........ TODO:
+ALGO = 3  # 0 - Brute Force, 1 - Nearest Neighbour, 2 - Hungarian, 3 - Genetic Algorithm
+SHOW_TABLE = True  # Da li da prikaze tabelu sa rutama i cenama u Brute Force algoritmu
+POPULATION_SIZE = 8  # Broj jedinki u GA, povecace se do sledeceg mnozioca cetvorke
+ITERATIONS = 20  # Broj iteracija koje ce GA izvrsiti
+MUTATION_RATE = 0.2  # Verovatnoca da ce se dete mutirati u GA
 
 # TODO: Uporediti rezultate svih algoritama nad istim priceMatrix
 
@@ -16,10 +21,13 @@ priceMatrix = np.array(
         [2, 3, 4, 1, 999],
     ]
 )
+# Brute Force nasao optimalnu sa cenom 8
 # Hungarian kaze da ima vise optimalnih ruta i staje
+# GA ima u poslednjoj populaciji dosta cena 8, tako da konvergira
 
-priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
+# priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
 # Hungarian radi - [0, 2, 1, 0] with price 8
+# GA uvek konvergira u 8
 
 # Hungarian primer sa indijskog snimka
 priceMatrix = np.array(
@@ -45,12 +53,24 @@ elif ALGO == 2:
     reducedPriceMatrix = priceMatrix.copy()
     multipleOptimalRoutesFlag = 0
 elif ALGO == 3:
-    2 + 2  # TODO:
+    # Postavljanje POPULATION_SIZE na mnozilac cetvorke, jer ce se deliti sa 2 za roditelje,
+    # i onda taj broj opet mora biti deljiv sa 2, jer moramo da imamo paran broj roditelja
+    if POPULATION_SIZE < 4:
+        POPULATION_SIZE = 4
+    # Postavljanje na paran
+    if POPULATION_SIZE % 2 != 0:
+        POPULATION_SIZE += 1
+    # Postavljanje na deljiv sa 4
+    if POPULATION_SIZE % 4 != 0:
+        POPULATION_SIZE += 2
+    print("Popsize:", POPULATION_SIZE)
+    population = list(np.zeros((POPULATION_SIZE, 1)))
 
 
 print("There are", math.factorial(dimension), "possible routes.")
 
 
+# Third party metoda za generisanje permutacija liste
 def generatePermutations(lst):
     # If lst is empty then there are no permutations
     if len(lst) == 0:
@@ -447,10 +467,164 @@ def hungarian():
         print("-------!!!---------")
 
 
+def initializePopulation():
+    global population
+    print("Initializing population...")
+    for index, l in enumerate(population):
+        shuffled = list(range(dimension))  # Od 0 do dimension
+        random.shuffle(shuffled)
+        # Posto shuffle kreira float64, konvertovanje u int
+        for place, i in enumerate(shuffled):
+            shuffled[place] = int(shuffled[place])
+        population[index] = shuffled
+        # Mora da se vrati u isti cvor
+        # population[index].append(population[index][0])
+    for l in population:
+        print(l)
+    print("--------------------")
+    return
+
+
+def calculateFitness(organisms):
+    print("Calculating fitness...")
+    for index, j in enumerate(organisms):
+        # Vracanje u isti cvor
+        # Stoji ovde a ne u initializePopulation() jer se koristi za odredjivanje fitness-a za decu
+        organisms[index].append(organisms[index][0])
+        organisms[index].append(calcCost(j))
+        print(organisms[index])
+    print("--------------------")
+    return organisms
+
+
+def selection():
+    print("Selecting parents...")
+    prices = []
+    for index, j in enumerate(population):
+        prices.append(population[index][-1])
+    # print(prices)
+    m = median(prices)
+    # print("m:", m)
+    selectedParents = []
+    i = 0
+    for index, j in enumerate(population):
+        if population[index][-1] < m:
+            selectedParents.append(population[index])
+            i += 1
+    # Posto uslov < median moze da da manje od POPULATION_SIZE / 2 elemenata, a nama treba bas toliko,
+    # dodajemo elemente koji imaju cenu tacno m
+    # print(len(selectedParents))
+    if len(selectedParents) < (POPULATION_SIZE / 2):
+        for index, j in enumerate(population):
+            if population[index][-1] == m:
+                selectedParents.append(population[index])
+            if len(selectedParents) == (POPULATION_SIZE / 2):
+                break
+    for sp in selectedParents:
+        print(sp)
+    print("--------------------")
+    return selectedParents
+
+
+def crossover(selectedParents):
+    children = []
+    for i in range(len(selectedParents)):
+        # Svaki par roditelja pravi par dece
+        if i % 2 != 0:
+            continue
+        parentOne = selectedParents[i][:-2]
+        parentTwo = selectedParents[i + 1][:-2]
+        print("parentOne", parentOne)
+        print("parentTwo", parentTwo)
+        # Algoritam ukrstanja :
+        # Prva polovina cvorova iz prvog roditelja se kopira,
+        # pa se iz drugog roditelja redom uzimaju cvorovi koji su ostali.
+        # Isto se radi i za drugu polovinu prvog roditelja, za kreiranje drugog deteta.
+        # Ovime se odrzava validnost rute.
+        copyLength = len(parentOne) // 2
+        if len(parentOne) % 2 == 0:
+            # Da za 4 ide do 1, a za 5 ide do 2
+            copyLength -= 1
+        childOne = parentOne[: copyLength + 1]
+        childTwo = parentOne[copyLength + 1 :]
+        print("Created children:")
+        for (index, elem) in enumerate(parentTwo):
+            if parentTwo[index] not in childOne:
+                childOne.append(parentTwo[index])
+            if parentTwo[index] not in childTwo:
+                childTwo.append(parentTwo[index])
+        print("childOne:", childOne)
+        print("childTwo:", childTwo)
+        children.append(childOne)
+        children.append(childTwo)
+        # TODO: dodaj ponovo prvi element na kraj
+    print("children:")
+    for c in children:
+        print(c)
+    print("--------------------")
+    return children
+
+
+def mutate(children):
+    print("Mutating children...")
+    for i in range(len(children)):  # Za svako dete
+        if random.random() < MUTATION_RATE:
+            print("Mutation occured on child", i + 1)
+            # Mutacija je zamena cvorova na random mestima
+            pos1 = random.randint(0, dimension - 1)
+            pos2 = random.randint(0, dimension - 1)
+            children[i][pos1], children[i][pos2] = children[i][pos2], children[i][pos1]
+    for c in children:
+        print(c)
+    print("--------------------")
+    return children
+
+
+def ga():
+    global population
+    # Inicijalizacija populacije na POPULATION_SIZE jedinki
+    initializePopulation()
+    # Odredjivanje fitness-a za svaku jedinku
+    # Ovo se radi samo jednom, jer ce u sledecoj iteraciji population vec imati cene
+    population = calculateFitness(population)
+    for _ in range(ITERATIONS):
+        print("\n|||||||||||||||||||||||||||\n")
+        # Selekcija se vrsi na osnovu fitness-a, uzima se polovina populacije koja ima najmanje cene
+        selectedParents = selection()
+        # Ta polovina (roditelji) ostaju, i kreiraju isto toliko dece, ukrstanjem
+        children = crossover(selectedParents)
+        # Deca se mutiraju i odredjuje im se prilagodjenost (cena)
+        children = mutate(children)
+        children = calculateFitness(children)
+        # Pravljenje nove populacije za sledecu iteraciju
+        population = selectedParents + children
+        print("Population at the end of iteration:")
+        for p in population:
+            print(p)
+    minPrice = math.inf
+    minPriceRoute = []
+    for index, l in enumerate(population):
+        if population[index][-1] <= minPrice:
+            minPrice = population[index][-1]
+            minPriceRoute = population[index][:-1]
+    print("The price that the algorithm convergated into is", minPrice)
+    print("The last route found with that price is:", minPriceRoute)
+
+    # TODO: Problem kod ovog algoritma je sto su i ukrstanje i mutacija random, sto ne doprinosi do poboljsanja rada algoritma,
+    # odnosno deca nece nuzno oznacavati priblizavanje optimalnoj ruti, vec samo nekoj novoj.
+    # Zbog toga mozemo da belezimo "najbolju rutu do sad", i mozda gledati da li je ona ostala u poslednjoj populaciji.
+
+    # TODO: Spomeni algoritam roja
+    #
+    return
+
+
 if ALGO == 0:
     bruteForce()
 elif ALGO == 1:
     nearestNeighbour()
 elif ALGO == 2:
     hungarian()
+elif ALGO == 3:
+    ga()
 
