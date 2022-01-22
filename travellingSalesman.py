@@ -3,10 +3,10 @@ import numpy as np
 import math
 import random
 
-ALGO = 3  # 0 - Brute Force, 1 - Nearest Neighbour, 2 - Hungarian, 3 - Genetic Algorithm
+ALGO = 0  # 0 - Brute Force, 1 - Nearest Neighbour, 2 - Hungarian, 3 - Genetic Algorithm
 SHOW_TABLE = True  # Da li da prikaze tabelu sa rutama i cenama u Brute Force algoritmu
 POPULATION_SIZE = 8  # Broj jedinki u GA, povecace se do sledeceg mnozioca cetvorke
-ITERATIONS = 20  # Broj iteracija koje ce GA izvrsiti
+ITERATIONS = 30  # Broj iteracija koje ce GA izvrsiti
 MUTATION_RATE = 0.2  # Verovatnoca da ce se dete mutirati u GA
 
 # TODO: Uporediti rezultate svih algoritama nad istim priceMatrix
@@ -21,19 +21,25 @@ priceMatrix = np.array(
         [2, 3, 4, 1, 999],
     ]
 )
-# Brute Force nasao optimalnu sa cenom 8
+# Brute Force nasao 5 ruta sa cenom 8
+# Nearest Neighbour je iz 0 nasao sa cenom 10, iz 1 sa 8, iz 2 sa 8, iz 3 sa 11, i iz 4 sa 9
 # Hungarian kaze da ima vise optimalnih ruta i staje
-# GA ima u poslednjoj populaciji dosta cena 8, tako da konvergira
+# GA konvergira u 8
 
-# priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
+priceMatrix = np.array([[999, 1, 2], [4, 999, 5], [9, 2, 999]])
+# Brute Force nasao 3 rute sa cenom 8
+# Nearest Neighbour je iz 0 nasao sa cenom 15, iz 1 sa 8, i iz 2 sa 8
 # Hungarian radi - [0, 2, 1, 0] with price 8
-# GA uvek konvergira u 8
+# GA konvergira u 8
 
 # Hungarian primer sa indijskog snimka
-priceMatrix = np.array(
-    [[999, 25, 75, 45], [35, 999, 150, 25], [35, 40, 999, 15], [65, 75, 130, 999]]
-)
+# priceMatrix = np.array(
+#     [[999, 25, 75, 45], [35, 999, 150, 25], [35, 40, 999, 15], [65, 75, 130, 999]]
+# )
+# Brute Force nasao 4 rute sa cenom 200
+# Nearest Neighbour je iz 0 nasao sa cenom 215, iz 1 sa 205, iz 2 sa 255 i iz 3 sa 255
 # Hungarian radi - [0, 2, 3, 1, 0] with price 200
+# GA konvergira u 200
 
 print("------------------------")
 print("Input price matrix:")
@@ -613,9 +619,6 @@ def ga():
     # TODO: Problem kod ovog algoritma je sto su i ukrstanje i mutacija random, sto ne doprinosi do poboljsanja rada algoritma,
     # odnosno deca nece nuzno oznacavati priblizavanje optimalnoj ruti, vec samo nekoj novoj.
     # Zbog toga mozemo da belezimo "najbolju rutu do sad", i mozda gledati da li je ona ostala u poslednjoj populaciji.
-
-    # TODO: Spomeni algoritam roja
-    #
     return
 
 
