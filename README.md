@@ -24,6 +24,7 @@ Smatramo da je Problem Trgovačkog Putnika rešen ako smo našli putanju koja za
 Moguće je definisati 2 tipa Problema Trgovačkog Putnika:
 - Kada postoji putanja iz svakog čvora do svakog čvora,
 - Kada ne postoji putanja iz svakog čvora do svakog čvora.
+
 Mi se fokusiramo na prvu varijantu.
 
 Kao cenu putanje možemo uzimati potrebno vreme, novčanu cenu, neku njihovu kombinaciju ili drugo.
